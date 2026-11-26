@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Category {
+  MOVE_DELIVER
+  BUY_FOR_ME
+  REMOVE_RECYCLE
+  GIVE_AWAY
+}
+
+enum Size {
+  S
+  M
+  L
+  XL
+}
+
+enum AdStatus {
+  ACTIVE
+  CLAIMED
+  COMPLETED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?  @unique
+  passwordHash String?
+  isSelf       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  postedAds  Ad[] @relation("PostedAds")
+  claimedAds Ad[] @relation("ClaimedAds")
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    Category
+  subCategory String?
+  size        Size
+  photos      String // JSON-encoded array of photo URLs
+  status      AdStatus @default(ACTIVE)
+
+  address        String
+  latitude       Float?
+  longitude      Float?
+  placement      String?
+  floor          String?
+  doorCode       String?
+  fitsInElevator Boolean @default(false)
+  canHelpCarry   Boolean @default(false)
+  timeSlots      String // JSON-encoded array of ISO strings, or "asap" / "anytime"
+
+  price      Float
+  serviceFee Float
+  total      Float
+
+  posterId String
+  poster   User   @relation("PostedAds", fields: [posterId], references: [id])
+
+  claimedById String?
+  claimedBy   User?   @relation("ClaimedAds", fields: [claimedById], references: [id])
+  claimedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="brand"] {
+  --background: #f4f5f7;
+  --foreground: #17162b;
+
+  --brand-navy: #1f1b4d;
+  --brand-navy-light: #322b7a;
+  --brand-pink: #eb0a6e;
+  --brand-pink-dark: #c40a5c;
+  --brand-blue: #2f7de1;
+  --brand-green: #1aa36a;
+  --brand-border: #e5e5ea;
+
+  --radius-card: 0.75rem;
+  --radius-btn: 0.5rem;
+}
+
+[data-theme="sunset"] {
+  --background: #fbf3ea;
+  --foreground: #2b1a12;
+
+  --brand-navy: #c2410c;
+  --brand-navy-light: #ea580c;
+  --brand-pink: #f59e0b;
+  --brand-pink-dark: #d97706;
+  --brand-blue: #dc2626;
+  --brand-green: #15803d;
+  --brand-border: #f0dfc9;
+
+  --radius-card: 1.25rem;
+  --radius-btn: 999px;
+}
+
+[data-theme="mono"] {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+
+  --brand-navy: #0a0a0a;
+  --brand-navy-light: #262626;
+  --brand-pink: #0a0a0a;
+  --brand-pink-dark: #000000;
+  --brand-blue: #0a0a0a;
+  --brand-green: #0a0a0a;
+  --brand-border: #d4d4d4;
+
+  --radius-card: 0.125rem;
+  --radius-btn: 0.125rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-light: var(--brand-navy-light);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-pink-dark: var(--brand-pink-dark);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-border: var(--brand-border);
+  --radius-card: var(--radius-card);
+  --radius-btn: var(--radius-btn);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.app-shell {
+  max-width: 480px;
+  margin-inline: auto;
+  background: #ffffff;
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 480px) {
+  body {
+    background: #e7e7ee;
+  }
+}
