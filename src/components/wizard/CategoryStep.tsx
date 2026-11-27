@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORIES, CategoryKey } from "@/lib/types";
+import { SELECTABLE_CATEGORIES, CategoryKey } from "@/lib/types";
 import {
   TruckIcon,
   ShoppingCartIcon,
@@ -24,7 +24,7 @@ export function CategoryStep({
 }) {
   return (
     <div className="space-y-3 px-4 py-6">
-      {CATEGORIES.map((category) => {
+      {SELECTABLE_CATEGORIES.map((category) => {
         const Icon = ICONS[category.key];
         return (
           <button

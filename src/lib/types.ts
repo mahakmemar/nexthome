@@ -1,31 +1,38 @@
 export const CATEGORIES = [
   {
+    key: "GIVE_AWAY",
+    selectable: true,
+    label: "Give away",
+    subTypes: ["Furniture", "Clothes", "Electronics", "Other items"],
+    gradient: "from-amber-400 to-rose-700",
+  },
+  {
     key: "MOVE_DELIVER",
+    selectable: false, // hidden from the "What do you need help with?" picker; set to true to bring it back
     label: "Move & deliver",
     subTypes: ["Small moves", "Blocket delivery", "From a store", "Pick up lost items"],
     gradient: "from-blue-500 to-blue-900",
   },
   {
     key: "BUY_FOR_ME",
+    selectable: false, // hidden from the "What do you need help with?" picker; set to true to bring it back
     label: "Buy for me",
     subTypes: ["Grocery run", "Hardware store", "Pharmacy", "Other purchase"],
     gradient: "from-fuchsia-600 to-indigo-900",
   },
   {
     key: "REMOVE_RECYCLE",
+    selectable: true,
     label: "Remove & recycle",
     subTypes: ["Garden waste", "Furniture", "Electronics", "General junk"],
     gradient: "from-emerald-500 to-teal-800",
   },
-  {
-    key: "GIVE_AWAY",
-    label: "Give away",
-    subTypes: ["Furniture", "Clothes", "Electronics", "Other items"],
-    gradient: "from-amber-400 to-rose-700",
-  },
 ] as const;
 
 export type CategoryKey = (typeof CATEGORIES)[number]["key"];
+
+/** The categories a poster can choose when posting. Hidden ones still exist: existing ads keep their category and label. */
+export const SELECTABLE_CATEGORIES = CATEGORIES.filter((category) => category.selectable);
 
 export const SIZES = [
   { key: "S", label: "S", hint: "Fits in a bag or box" },
@@ -40,9 +47,3 @@ export function categoryLabel(key: string) {
   return CATEGORIES.find((c) => c.key === key)?.label ?? key;
 }
 
-export const SERVICE_FEE_RATE = 0.15;
-export const SERVICE_FEE_MIN = 19;
-
-export function calcServiceFee(price: number) {
-  return Math.max(SERVICE_FEE_MIN, Math.round(price * SERVICE_FEE_RATE));
-}

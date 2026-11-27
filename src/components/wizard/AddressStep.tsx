@@ -1,27 +1,28 @@
 "use client";
 
+import { AddressAutocomplete, type AddressValue } from "@/components/AddressAutocomplete";
 import { Continue } from "@/components/wizard/Continue";
 
 export function AddressStep({
-  value,
+  address,
+  latitude,
+  longitude,
   onChange,
   onContinue,
-}: {
-  value: string;
-  onChange: (address: string) => void;
+}: AddressValue & {
+  onChange: (next: AddressValue) => void;
   onContinue: () => void;
 }) {
   return (
     <div className="px-4 py-6">
       <p className="mb-3 font-semibold text-neutral-800">Enter pick-up address:</p>
-      <input
-        autoFocus
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Street and number, city"
-        className="w-full rounded-[var(--radius-btn)] border border-brand-border bg-white px-4 py-3 text-neutral-900 outline-none focus:border-brand-blue"
+      <AddressAutocomplete
+        address={address}
+        latitude={latitude}
+        longitude={longitude}
+        onChange={onChange}
       />
-      <Continue onClick={onContinue} disabled={value.trim().length < 3} />
+      <Continue onClick={onContinue} disabled={address.trim().length < 3} />
     </div>
   );
 }

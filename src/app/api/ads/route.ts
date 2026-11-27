@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSelfUser } from "@/lib/user";
-import { calcServiceFee } from "@/lib/types";
 import { validateOfferedSlots } from "@/lib/slots";
 
 export async function GET() {
@@ -10,6 +9,13 @@ export async function GET() {
     include: { poster: true, claimedBy: true },
   });
   return NextResponse.json(ads);
+}
+
+// A coordinate is stored only if it is a real number in range.
+function toCoordinate(value: unknown, limit: number) {
+  return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit
+    ? value
+    : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -24,7 +30,6 @@ export async function POST(req: NextRequest) {
 
   const self = await getSelfUser();
   const price = Number(body.price);
-  const serviceFee = calcServiceFee(price);
 
   const ad = await db.ad.create({
     data: {
@@ -35,8 +40,8 @@ export async function POST(req: NextRequest) {
       size: body.size,
       photos: JSON.stringify(body.photos ?? []),
       address: body.address,
-      latitude: body.latitude ?? null,
-      longitude: body.longitude ?? null,
+      latitude: toCoordinate(body.latitude, 90),
+      longitude: toCoordinate(body.longitude, 180),
       placement: body.placement ?? null,
       floor: body.floor ?? null,
       doorCode: body.doorCode ?? null,
@@ -44,8 +49,9 @@ export async function POST(req: NextRequest) {
       canHelpCarry: Boolean(body.canHelpCarry),
       timeSlots: JSON.stringify(slots.slots),
       price,
-      serviceFee,
-      total: price + serviceFee,
+      // There is no service fee. The columns stay, so the total is simply the price.
+      serviceFee: 0,
+      total: price,
       posterId: self.id,
     },
   });

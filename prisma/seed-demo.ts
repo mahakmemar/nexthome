@@ -68,7 +68,6 @@ const STREETS = ["Storgatan", "Råsundavägen", "Solnavägen", "Frösundaviks al
 const POSTCODES = ["171 52 Solna", "169 36 Solna", "171 45 Solna", "169 70 Solna", "170 70 Solna"];
 
 function adData(d: Demo, i: number, posterId: string) {
-  const serviceFee = d.price > 0 ? Math.max(19, Math.round(d.price * 0.15)) : 0;
   return {
     title: d.title,
     description: d.description,
@@ -85,8 +84,8 @@ function adData(d: Demo, i: number, posterId: string) {
     canHelpCarry: i % 4 === 0,
     timeSlots: JSON.stringify(d.slots),
     price: d.price,
-    serviceFee,
-    total: d.price + serviceFee,
+    serviceFee: 0, // no service fee
+    total: d.price,
     posterId,
   };
 }

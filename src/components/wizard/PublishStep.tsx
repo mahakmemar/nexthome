@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { calcServiceFee, categoryLabel } from "@/lib/types";
+import { categoryLabel } from "@/lib/types";
+import { slotLabel, sortSlots } from "@/lib/slots";
+import { formatPrice } from "@/lib/money";
 import type { WizardData } from "@/lib/wizard";
 
 export function PublishStep({
@@ -14,17 +16,13 @@ export function PublishStep({
   onPublish: () => void;
 }) {
   const [confirmed, setConfirmed] = useState(false);
-  const serviceFee = calcServiceFee(data.price);
-  const total = data.price + serviceFee;
 
   const timeSlotLabel =
-    data.timeSlots.includes("asap")
-      ? "As soon as possible"
-      : data.timeSlots.includes("anytime")
-        ? "Anytime"
-        : data.timeSlots.length > 0
-          ? `Selected timeslot${data.timeSlots.length > 1 ? "s" : ""}: ${data.timeSlots.join(", ")}`
-          : "Not set";
+    data.timeSlots.length === 0
+      ? "Not set"
+      : data.timeSlots.length === 1
+        ? slotLabel(data.timeSlots[0])
+        : `${data.timeSlots.length} options: ${sortSlots(data.timeSlots).map((s) => slotLabel(s)).join(", ")}`;
 
   return (
     <div className="pb-28">
@@ -42,9 +40,7 @@ export function PublishStep({
       <Row label="When can the pick-up happen?" value={timeSlotLabel} />
 
       <div className="border-t border-brand-border" />
-      <Row label="Price" value={`${data.price} kr`} />
-      <Row label="Service fee" value={`${serviceFee} kr`} />
-      <Row label="Total" value={`${total} kr`} bold />
+      <Row label="Price" value={formatPrice(data.price)} bold />
 
       <label className="flex items-start gap-3 px-4 py-5 text-sm text-neutral-600">
         <input

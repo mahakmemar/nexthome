@@ -5,6 +5,8 @@ export type WizardData = {
   subCategory: string | null;
   timeSlots: string[];
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   placement: string;
   floor: string;
   doorCode: string;
@@ -21,6 +23,8 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   subCategory: null,
   timeSlots: [],
   address: "",
+  latitude: null,
+  longitude: null,
   placement: "In the home",
   floor: "",
   doorCode: "",
@@ -35,7 +39,6 @@ export const INITIAL_WIZARD_DATA: WizardData = {
 export const STEPS = [
   "category",
   "subCategory",
-  "payment-info",
   "time-slots",
   "address",
   "location-details",

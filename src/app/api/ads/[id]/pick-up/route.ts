@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
-import { parseSlots } from "@/lib/slots";
+import { isSlotInPast, parseSlots } from "@/lib/slots";
 import { BOOKING_LIMIT_MESSAGE, MAX_ACTIVE_BOOKINGS } from "@/lib/bookings";
 
 export async function POST(
@@ -35,6 +35,10 @@ export async function POST(
         { status: 400 },
       );
     }
+  }
+
+  if (typeof slot === "string" && isSlotInPast(slot)) {
+    return NextResponse.json({ error: "That time slot has already passed" }, { status: 400 });
   }
 
   // Check the limit and claim in one transaction, so two quick taps (or two tabs)

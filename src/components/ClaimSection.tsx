@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PickUpButton } from "@/components/PickUpButton";
-import { TODAY_SLOTS, TOMORROW_SLOTS, isFlexibleSlot, slotLabel } from "@/lib/slots";
+import { groupSlotsByDay, isFlexibleSlot, slotLabel } from "@/lib/slots";
 
 /**
  * Lets a helper choose exactly ONE of the time slots the poster offered, then
@@ -17,15 +17,18 @@ export function ClaimSection({
   initialSlot,
   atLimit = false,
   maxBookings,
+  expired = false,
 }: {
   adId: string;
   timeSlots: string[];
   signedIn: boolean;
+  /** A slot chosen before logging in, restored when they come back. */
+  initialSlot?: string | null;
   /** The person already has the maximum number of ads booked. */
   atLimit?: boolean;
   maxBookings?: number;
-  /** A slot chosen before logging in, restored when they come back. */
-  initialSlot?: string | null;
+  /** Every time slot the poster offered has already passed. */
+  expired?: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(
     initialSlot && timeSlots.includes(initialSlot)
@@ -36,12 +39,20 @@ export function ClaimSection({
   );
 
   const flexible = timeSlots.filter(isFlexibleSlot);
-  const today = TODAY_SLOTS.filter((s) => timeSlots.includes(s));
-  const tomorrow = TOMORROW_SLOTS.filter((s) => timeSlots.includes(s));
+  const days = groupSlotsByDay(timeSlots);
   const hasSlots = timeSlots.length > 0;
 
   return (
     <>
+      {expired && (
+        <div
+          role="status"
+          className="mt-6 rounded-[var(--radius-card)] bg-neutral-100 p-4 text-sm text-neutral-700"
+        >
+          <p className="font-semibold">The time slots for this ad have passed.</p>
+          <p className="mt-1">It can&apos;t be booked anymore.</p>
+        </div>
+      )}
       {atLimit && (
         <div
           role="status"
@@ -79,17 +90,24 @@ export function ClaimSection({
                 ))}
               </div>
             )}
-            {today.length > 0 && (
-              <SlotGroup title="Today" slots={today} selected={selected} onSelect={setSelected} />
-            )}
-            {tomorrow.length > 0 && (
-              <SlotGroup
-                title="Tomorrow"
-                slots={tomorrow}
-                selected={selected}
-                onSelect={setSelected}
-              />
-            )}
+            {days.map((day) => (
+              <div key={day.key}>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  {day.title}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {day.items.map((item) => (
+                    <SlotOption
+                      key={item.slot}
+                      slot={item.slot}
+                      label={item.label}
+                      selected={selected === item.slot}
+                      onSelect={setSelected}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           {!selected && (
@@ -98,37 +116,13 @@ export function ClaimSection({
         </section>
       )}
 
-      <PickUpButton adId={adId} slot={selected} signedIn={signedIn} disabled={atLimit || (hasSlots && !selected)} />
+      <PickUpButton
+        adId={adId}
+        slot={selected}
+        signedIn={signedIn}
+        disabled={atLimit || expired || (hasSlots && !selected)}
+      />
     </>
-  );
-}
-
-function SlotGroup({
-  title,
-  slots,
-  selected,
-  onSelect,
-}: {
-  title: string;
-  slots: string[];
-  selected: string | null;
-  onSelect: (slot: string) => void;
-}) {
-  return (
-    <div>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">{title}</p>
-      <div className="grid grid-cols-3 gap-2">
-        {slots.map((slot) => (
-          <SlotOption
-            key={slot}
-            slot={slot}
-            label={slot}
-            selected={selected === slot}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 

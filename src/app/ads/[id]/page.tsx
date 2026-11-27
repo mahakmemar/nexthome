@@ -5,11 +5,12 @@ import { db } from "@/lib/db";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { CancelSpotButton } from "@/components/CancelSpotButton";
 import { ClaimSection } from "@/components/ClaimSection";
-import { bookedSentence, parseSlots, slotLabel } from "@/lib/slots";
+import { bookedSentence, isSlotInPast, parseSlots, slotLabel } from "@/lib/slots";
 import { getSessionUser } from "@/lib/session";
 import { MAX_ACTIVE_BOOKINGS, countActiveBookings } from "@/lib/bookings";
 import { SIZES, categoryLabel } from "@/lib/types";
 import { timeAgo } from "@/lib/time";
+import { formatPrice } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ export default async function AdDetailPage({
   if (!ad) notFound();
 
   const photos: string[] = JSON.parse(ad.photos || "[]");
+  // Dated slots expire; only offer the ones that are still ahead.
+  const offered = parseSlots(ad.timeSlots);
+  const upcoming = offered.filter((slot) => !isSlotInPast(slot));
 
   return (
     <div className="pb-28">
@@ -48,7 +52,7 @@ export default async function AdDetailPage({
       <div className="px-4 py-5">
         <p className="text-sm uppercase tracking-wide text-neutral-400">Pay</p>
         <p className="mb-4 text-4xl font-black text-neutral-900">
-          {ad.price > 0 ? `${Math.round(ad.price)} kr` : "Free"}
+          {ad.price > 0 ? formatPrice(Math.round(ad.price)) : "Free"}
         </p>
 
         <h1 className="text-2xl font-bold text-neutral-900">{ad.title}</h1>
@@ -98,7 +102,8 @@ export default async function AdDetailPage({
         {ad.status === "ACTIVE" && (
           <ClaimSection
             adId={ad.id}
-            timeSlots={parseSlots(ad.timeSlots)}
+            timeSlots={upcoming}
+            expired={offered.length > 0 && upcoming.length === 0}
             signedIn={Boolean(viewer)}
             initialSlot={initialSlot}
             atLimit={bookedCount >= MAX_ACTIVE_BOOKINGS}

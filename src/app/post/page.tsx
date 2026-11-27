@@ -6,7 +6,6 @@ import { StepHeader } from "@/components/wizard/StepHeader";
 import { INITIAL_WIZARD_DATA, STEPS, WizardData } from "@/lib/wizard";
 import { CategoryStep } from "@/components/wizard/CategoryStep";
 import { SubCategoryStep } from "@/components/wizard/SubCategoryStep";
-import { PaymentInfoStep } from "@/components/wizard/PaymentInfoStep";
 import { TimeSlotsStep } from "@/components/wizard/TimeSlotsStep";
 import { AddressStep } from "@/components/wizard/AddressStep";
 import { LocationDetailsStep } from "@/components/wizard/LocationDetailsStep";
@@ -18,13 +17,12 @@ import { PublishStep } from "@/components/wizard/PublishStep";
 const TITLES: Record<(typeof STEPS)[number], string> = {
   category: "What do you need help with?",
   subCategory: "What do you need help with?",
-  "payment-info": "",
   "time-slots": "Select time slot(s) for pick-up",
   address: "Address",
   "location-details": "Floor and door code",
   details: "Title & description",
   prohibited: "",
-  price: "I will pay",
+  price: "Price",
   publish: "Publish ad",
 };
 
@@ -102,8 +100,6 @@ export default function PostWizardPage() {
         />
       )}
 
-      {step === "payment-info" && <PaymentInfoStep onContinue={goNext} />}
-
       {step === "time-slots" && (
         <TimeSlotsStep
           value={data.timeSlots}
@@ -114,8 +110,10 @@ export default function PostWizardPage() {
 
       {step === "address" && (
         <AddressStep
-          value={data.address}
-          onChange={(address) => update({ address })}
+          address={data.address}
+          latitude={data.latitude}
+          longitude={data.longitude}
+          onChange={update}
           onContinue={goNext}
         />
       )}

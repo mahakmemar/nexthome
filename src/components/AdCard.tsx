@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { formatPrice } from "@/lib/money";
 
 type AdCardAd = {
   id: string;
@@ -50,7 +51,7 @@ export function AdCard({
         <div className="absolute inset-x-0 bottom-0 p-3 text-white">
           <p className="truncate text-sm font-medium">{ad.title}</p>
           <p className="text-base font-bold">
-            {ad.price > 0 ? `${ad.price.toFixed(1)} SEK` : "Free"}
+            {ad.price > 0 ? formatPrice(ad.price) : "Free"}
           </p>
           {note && <p className="truncate text-xs text-white/80">{note}</p>}
         </div>
