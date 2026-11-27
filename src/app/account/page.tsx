@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { LogoutButton } from "@/components/LogoutButton";
+import { ReputationLine } from "@/components/ReputationLine";
+import { getReputation } from "@/lib/ratings";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 
 export const dynamic = "force-dynamic";
@@ -32,11 +34,17 @@ export default async function AccountPage() {
     );
   }
 
+  const reputation = await getReputation(user.id);
+
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
       <UserCircleIcon className="h-20 w-20 text-brand-navy" />
       <h1 className="text-xl font-bold text-neutral-900">{user.name}</h1>
       {user.email && <p className="text-sm text-neutral-500">{user.email}</p>}
+      <p className="text-sm">
+        <span className="font-semibold text-neutral-800">Your pick-up record: </span>
+        <ReputationLine reputation={reputation} />
+      </p>
       <p className="text-sm text-neutral-500">
         Payment methods and verification aren&apos;t part of this clone yet.
       </p>

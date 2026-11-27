@@ -32,6 +32,13 @@ enum AdStatus {
   COMPLETED
 }
 
+// How the pick-up went, as reported by the person who posted the ad.
+enum PickupOutcome {
+  ON_TIME
+  LATE
+  NO_SHOW
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -42,6 +49,9 @@ model User {
 
   postedAds  Ad[] @relation("PostedAds")
   claimedAds Ad[] @relation("ClaimedAds")
+
+  ratingsGiven    Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
 
   oauthAccounts OAuthAccount[]
 }
@@ -93,4 +103,27 @@ model Ad {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ratings Rating[]
+}
+
+// A poster's rating of the person who booked their ad ("the buyer"). One per ad and
+// buyer: if a no-show frees the ad and someone else books it, that is a new rating.
+model Rating {
+  id      String        @id @default(cuid())
+  outcome PickupOutcome
+  stars   Int? // 1-5; not set for a no-show
+  comment String?
+
+  adId        String
+  ad          Ad     @relation(fields: [adId], references: [id], onDelete: Cascade)
+  raterId     String // the poster
+  rater       User   @relation("RatingsGiven", fields: [raterId], references: [id])
+  ratedUserId String // the buyer who booked
+  ratedUser   User   @relation("RatingsReceived", fields: [ratedUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([adId, ratedUserId])
+  @@index([ratedUserId])
 }

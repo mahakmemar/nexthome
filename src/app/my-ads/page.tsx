@@ -11,8 +11,13 @@ export default async function MyAdsPage() {
   // Ads you picked up belong to the account you're logged in with.
   const viewer = await getSessionUser();
 
+  // Ads posted while logged in belong to that account. Older ads belong to the shared
+  // "You" user, so those stay in the list too.
   const [posted, claimed] = await Promise.all([
-    db.ad.findMany({ where: { posterId: self.id }, orderBy: { createdAt: "desc" } }),
+    db.ad.findMany({
+      where: { posterId: { in: viewer ? [viewer.id, self.id] : [self.id] } },
+      orderBy: { createdAt: "desc" },
+    }),
     viewer
       ? db.ad.findMany({ where: { claimedById: viewer.id }, orderBy: { createdAt: "desc" } })
       : Promise.resolve([]),

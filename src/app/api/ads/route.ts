@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSelfUser } from "@/lib/user";
+import { getSessionUser } from "@/lib/session";
 import { validateOfferedSlots } from "@/lib/slots";
 import { validatePhotoUrls } from "@/lib/uploads";
 
@@ -35,7 +36,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: photos.error }, { status: 400 });
   }
 
-  const self = await getSelfUser();
+  // The ad belongs to the account that is logged in, so that account can later rate
+  // whoever books it. Without a login it falls back to the shared "You" user, as before.
+  const poster = (await getSessionUser()) ?? (await getSelfUser());
   const price = Number(body.price);
 
   const ad = await db.ad.create({
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
       // There is no service fee. The columns stay, so the total is simply the price.
       serviceFee: 0,
       total: price,
-      posterId: self.id,
+      posterId: poster.id,
     },
   });
 

@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { CancelSpotButton } from "@/components/CancelSpotButton";
 import { ClaimSection } from "@/components/ClaimSection";
+import { RateBuyerForm } from "@/components/RateBuyerForm";
+import { ReputationLine } from "@/components/ReputationLine";
+import { OUTCOMES, hasPickupStarted } from "@/lib/rating-rules";
+import { getReputation } from "@/lib/ratings";
 import { bookedSentence, isSlotInPast, parseSlots, slotLabel } from "@/lib/slots";
 import { getSessionUser } from "@/lib/session";
 import { MAX_ACTIVE_BOOKINGS, countActiveBookings } from "@/lib/bookings";
@@ -27,6 +31,15 @@ export default async function AdDetailPage({
   const bookedCount = viewer ? await countActiveBookings(viewer.id) : 0;
   const ad = await db.ad.findUnique({ where: { id }, include: { claimedBy: true } });
   if (!ad) notFound();
+
+  // The poster sees how reliable the buyer has been, and rates the pick-up afterwards.
+  const isPoster = Boolean(viewer && ad.posterId === viewer.id);
+  const buyerReputation =
+    isPoster && ad.claimedById ? await getReputation(ad.claimedById) : null;
+  const myRating =
+    isPoster && ad.status === "COMPLETED"
+      ? await db.rating.findFirst({ where: { adId: ad.id, raterId: ad.posterId } })
+      : null;
 
   const photos: string[] = JSON.parse(ad.photos || "[]");
   // Dated slots expire; only offer the ones that are still ahead.
@@ -125,13 +138,34 @@ export default async function AdDetailPage({
               <>
                 <p>{ad.claimedBy ? `${ad.claimedBy.name} is` : "A helper is"} on the way to pick this up.</p>
                 {ad.claimedSlot && <p className="mt-1">Time: {slotLabel(ad.claimedSlot)}</p>}
+                {isPoster && buyerReputation && (
+                  <p className="mt-2 text-xs font-normal">
+                    <ReputationLine reputation={buyerReputation} />
+                  </p>
+                )}
               </>
             )}
           </div>
         )}
+        {ad.status === "CLAIMED" && isPoster && ad.claimedById && (
+          hasPickupStarted(ad.claimedSlot) ? (
+            <RateBuyerForm adId={ad.id} buyerName={ad.claimedBy?.name ?? "the helper"} />
+          ) : (
+            <p className="mt-3 text-center text-xs text-neutral-500">
+              You can rate the pick-up once the booked time has started.
+            </p>
+          )
+        )}
         {ad.status === "COMPLETED" && (
           <div className="mt-6 rounded-[var(--radius-card)] bg-neutral-100 p-4 text-center text-sm font-semibold text-neutral-500">
-            This task has been completed.
+            <p>This task has been completed.</p>
+            {myRating && (
+              <p className="mt-1 font-normal">
+                You rated {ad.claimedBy?.name ?? "the helper"}:{" "}
+                {OUTCOMES.find((o) => o.key === myRating.outcome)?.label}
+                {myRating.stars ? ` · ${"★".repeat(myRating.stars)}` : ""}
+              </p>
+            )}
           </div>
         )}
       </div>
