@@ -35,7 +35,7 @@ export default async function HomePage() {
       </header>
 
       {viewer && (
-        <p className="border-b border-brand-border px-4 py-3 text-base font-semibold text-neutral-800">
+        <p className="border-b border-brand-border px-4 py-3 text-center text-base font-semibold text-neutral-800">
           Hello {viewer.name}
         </p>
       )}
