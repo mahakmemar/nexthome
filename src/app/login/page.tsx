@@ -4,8 +4,8 @@ import { safeNext } from "@/lib/redirect";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next } = await searchParams;
-  return <LoginForm next={next ? safeNext(next) : undefined} />;
+  const { next, error } = await searchParams;
+  return <LoginForm next={next ? safeNext(next) : undefined} error={error} />;
 }

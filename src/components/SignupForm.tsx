@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, FormEvent } from "react";
+import { OAuthButtons } from "@/components/OAuthButtons";
 import { signupSchema } from "@/lib/validation";
 
 type FieldErrors = Partial<Record<"email" | "password" | "repeatPassword", string>>;
@@ -92,6 +93,8 @@ export function SignupForm({ next }: { next?: string }) {
           Log in
         </Link>
       </p>
+
+      <OAuthButtons next={next} />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Field label="Email" error={errors.email}>

@@ -71,3 +71,26 @@ export async function getSessionUser() {
   if (!userId) return null;
   return db.user.findUnique({ where: { id: userId } });
 }
+
+// ---------- short-lived signed values (used for the Google / Facebook sign-in handshake) ----------
+
+/** A signed, expiring value you can hand to a browser and trust when it comes back. */
+export function signPayload(payload: object, ttlMs: number, now = Date.now()) {
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: now + ttlMs })).toString("base64url");
+  return `${body}.${sign(body)}`;
+}
+
+/** The payload if the signature is genuine and it hasn't expired, otherwise null. */
+export function readPayload<T extends object>(token: string, now = Date.now()): T | null {
+  const [body, signature] = token.split(".");
+  if (!body || !signature) return null;
+  const expected = Buffer.from(sign(body));
+  const given = Buffer.from(signature);
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    return typeof parsed.exp === "number" && parsed.exp >= now ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}

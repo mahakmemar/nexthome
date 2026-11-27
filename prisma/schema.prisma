@@ -42,6 +42,21 @@ model User {
 
   postedAds  Ad[] @relation("PostedAds")
   claimedAds Ad[] @relation("ClaimedAds")
+
+  oauthAccounts OAuthAccount[]
+}
+
+// A Google or Facebook identity linked to a user. The provider's own account id
+// (not the email) is what identifies the person on later sign-ins.
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String // "google" | "facebook"
+  providerAccountId String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
 }
 
 model Ad {

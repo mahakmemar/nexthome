@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, FormEvent } from "react";
+import { OAuthButtons } from "@/components/OAuthButtons";
 import { loginSchema } from "@/lib/validation";
+import { authErrorMessage } from "@/lib/auth-errors";
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, error: urlError }: { next?: string; error?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,6 +54,14 @@ export function LoginForm({ next }: { next?: string }) {
           Sign up
         </Link>
       </p>
+
+      {urlError && (
+        <p role="alert" className="mb-5 rounded-[var(--radius-btn)] bg-red-50 px-4 py-3 text-sm text-red-700">
+          {authErrorMessage(urlError)}
+        </p>
+      )}
+
+      <OAuthButtons next={next} />
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <label className="block">
