@@ -15,6 +15,7 @@ export type WizardData = {
   title: string;
   description: string;
   size: SizeKey;
+  photos: string[]; // URLs of photos the person uploaded
   price: number;
 };
 
@@ -33,6 +34,7 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   title: "",
   description: "",
   size: "M",
+  photos: [],
   price: 100,
 };
 
@@ -43,6 +45,7 @@ export const STEPS = [
   "address",
   "location-details",
   "details",
+  "photos",
   "prohibited",
   "price",
   "publish",

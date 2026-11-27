@@ -10,6 +10,7 @@ import { TimeSlotsStep } from "@/components/wizard/TimeSlotsStep";
 import { AddressStep } from "@/components/wizard/AddressStep";
 import { LocationDetailsStep } from "@/components/wizard/LocationDetailsStep";
 import { DetailsStep } from "@/components/wizard/DetailsStep";
+import { PhotosStep } from "@/components/wizard/PhotosStep";
 import { ProhibitedStep } from "@/components/wizard/ProhibitedStep";
 import { PriceStep } from "@/components/wizard/PriceStep";
 import { PublishStep } from "@/components/wizard/PublishStep";
@@ -21,6 +22,7 @@ const TITLES: Record<(typeof STEPS)[number], string> = {
   address: "Address",
   "location-details": "Floor and door code",
   details: "Title & description",
+  photos: "Add photos",
   prohibited: "",
   price: "Price",
   publish: "Publish ad",
@@ -53,14 +55,10 @@ export default function PostWizardPage() {
   async function publish() {
     setSubmitting(true);
     try {
-      const seed = encodeURIComponent(data.title || "task");
       const res = await fetch("/api/ads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          photos: [`https://picsum.photos/seed/${seed}/900/700`],
-        }),
+        body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to publish ad");
       const ad = await res.json();
@@ -136,6 +134,14 @@ export default function PostWizardPage() {
           description={data.description}
           size={data.size}
           onChange={update}
+          onContinue={goNext}
+        />
+      )}
+
+      {step === "photos" && (
+        <PhotosStep
+          value={data.photos}
+          onChange={(photos) => update({ photos })}
           onContinue={goNext}
         />
       )}

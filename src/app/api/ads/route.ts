@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSelfUser } from "@/lib/user";
 import { validateOfferedSlots } from "@/lib/slots";
+import { validatePhotoUrls } from "@/lib/uploads";
 
 export async function GET() {
   const ads = await db.ad.findMany({
@@ -28,6 +29,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: slots.error }, { status: 400 });
   }
 
+  // 1 to 5 photos, and only ones uploaded through /api/uploads (never another site's URL).
+  const photos = await validatePhotoUrls(body.photos);
+  if (!photos.ok) {
+    return NextResponse.json({ error: photos.error }, { status: 400 });
+  }
+
   const self = await getSelfUser();
   const price = Number(body.price);
 
@@ -38,7 +45,7 @@ export async function POST(req: NextRequest) {
       category: body.category,
       subCategory: body.subCategory ?? null,
       size: body.size,
-      photos: JSON.stringify(body.photos ?? []),
+      photos: JSON.stringify(photos.photos),
       address: body.address,
       latitude: toCoordinate(body.latitude, 90),
       longitude: toCoordinate(body.longitude, 180),

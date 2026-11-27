@@ -33,6 +33,7 @@ export function PublishStep({
       <Row label="Category" value={categoryLabel(data.category ?? "")} />
       <Row label="Sub-type" value={data.subCategory ?? "-"} />
       <Row label="Address" value={data.address} />
+      <Row label="Photos" value={`${data.photos.length} photo${data.photos.length === 1 ? "" : "s"}`} />
       <Row label="Placement" value={data.placement} />
       <Row label="Floor" value={data.floor || "-"} />
       <Row label="Fits in the elevator" value={data.fitsInElevator ? "Yes" : "No"} />

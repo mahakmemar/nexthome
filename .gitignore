@@ -48,3 +48,6 @@ next-env.d.ts
 
 # allow the env template
 !.env.example
+
+# photos people upload to ads (kept out of git)
+/uploads/
