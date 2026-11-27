@@ -1,6 +1,9 @@
 import { db } from "@/lib/db";
 import { AdCard } from "@/components/AdCard";
+import { HorizontalScroller } from "@/components/HorizontalScroller";
 import { LocationSearch } from "@/components/LocationSearch";
+import { getSessionUser } from "@/lib/session";
+import { slotLabel } from "@/lib/slots";
 import { BoltIcon, CreditCardIcon, ShieldCheckIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +14,17 @@ export default async function HomePage() {
   const ads = await db.ad.findMany({
     where: { status: "ACTIVE" },
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 30,
   });
+
+  // The logged-in person's name, and the ads they have booked to pick up.
+  const viewer = await getSessionUser();
+  const booked = viewer
+    ? await db.ad.findMany({
+        where: { status: "CLAIMED", claimedById: viewer.id },
+        orderBy: { claimedAt: "desc" },
+      })
+    : [];
 
   return (
     <div className="pb-6">
@@ -21,6 +33,12 @@ export default async function HomePage() {
           NextHome
         </span>
       </header>
+
+      {viewer && (
+        <p className="border-b border-brand-border px-4 py-3 text-base font-semibold text-neutral-800">
+          Hello {viewer.name}
+        </p>
+      )}
 
       <div className="grid grid-cols-3 gap-2 border-b border-brand-border px-4 py-5 text-center text-xs text-neutral-500">
         <div className="flex flex-col items-center gap-1">
@@ -44,17 +62,38 @@ export default async function HomePage() {
 
       <section className="px-4 py-5">
         <h2 className="mb-3 text-xl font-bold text-neutral-900">Active ads in your area</h2>
-        <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none]">
+        <HorizontalScroller label="Active ads in your area">
           {ads.map((ad) => (
-            <AdCard key={ad.id} ad={ad} className="w-44" />
+            <AdCard key={ad.id} ad={ad} className="w-44 snap-start" />
           ))}
           {ads.length === 0 && (
             <p className="text-sm text-neutral-500">
               No active ads yet — be the first to post one.
             </p>
           )}
-        </div>
+        </HorizontalScroller>
       </section>
+
+      {viewer && (
+        <section className="px-4 pb-5">
+          <h2 className="mb-3 text-xl font-bold text-neutral-900">Ads you have booked to pick up</h2>
+          <HorizontalScroller label="Ads you have booked to pick up">
+            {booked.map((ad) => (
+              <AdCard
+                key={ad.id}
+                ad={ad}
+                className="w-44 snap-start"
+                note={ad.claimedSlot ? slotLabel(ad.claimedSlot) : undefined}
+              />
+            ))}
+            {booked.length === 0 && (
+              <p className="text-sm text-neutral-500">
+                You haven&apos;t booked any ads to pick up yet.
+              </p>
+            )}
+          </HorizontalScroller>
+        </section>
+      )}
 
       {SHOW_REFERRAL_SECTION && (
         <section className="mx-4 rounded-[var(--radius-card)] bg-neutral-50 px-5 py-8 text-center">

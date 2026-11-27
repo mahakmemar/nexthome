@@ -74,6 +74,7 @@ model Ad {
   claimedById String?
   claimedBy   User?   @relation("ClaimedAds", fields: [claimedById], references: [id])
   claimedAt   DateTime?
+  claimedSlot String? // the one time slot the helper picked when claiming
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

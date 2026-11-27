@@ -9,7 +9,16 @@ type AdCardAd = {
   photos: string; // JSON-encoded string[]
 };
 
-export function AdCard({ ad, className = "" }: { ad: AdCardAd; className?: string }) {
+export function AdCard({
+  ad,
+  className = "",
+  note,
+}: {
+  ad: AdCardAd;
+  className?: string;
+  /** Small extra line under the price, e.g. the time you booked. */
+  note?: string;
+}) {
   const photos: string[] = JSON.parse(ad.photos || "[]");
   const cover = photos[0];
 
@@ -43,6 +52,7 @@ export function AdCard({ ad, className = "" }: { ad: AdCardAd; className?: strin
           <p className="text-base font-bold">
             {ad.price > 0 ? `${ad.price.toFixed(1)} SEK` : "Free"}
           </p>
+          {note && <p className="truncate text-xs text-white/80">{note}</p>}
         </div>
       </div>
     </Link>

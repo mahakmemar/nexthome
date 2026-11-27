@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { signupSchema } from "@/lib/validation";
+import { startSession } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -30,5 +31,6 @@ export async function POST(req: NextRequest) {
     data: { name: email.split("@")[0], email, passwordHash },
   });
 
+  await startSession(user.id);
   return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
 }

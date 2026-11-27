@@ -1,19 +1,12 @@
 "use client";
 
 import { Continue } from "@/components/wizard/Continue";
-
-const TODAY_SLOTS = ["21-22", "22-23", "23-00"];
-const TOMORROW_SLOTS = [
-  "00-01",
-  "01-02",
-  "02-03",
-  "03-04",
-  "04-05",
-  "05-06",
-  "06-07",
-  "07-08",
-  "08-09",
-];
+import {
+  MAX_TIME_SLOTS,
+  TODAY_SLOTS,
+  TOMORROW_SLOTS,
+  isFlexibleSlot,
+} from "@/lib/slots";
 
 export function TimeSlotsStep({
   value,
@@ -24,12 +17,17 @@ export function TimeSlotsStep({
   onChange: (slots: string[]) => void;
   onContinue: () => void;
 }) {
+  const hourlySelected = value.filter((s) => !isFlexibleSlot(s));
+  const atLimit = hourlySelected.length >= MAX_TIME_SLOTS;
+
   function toggleSlot(slot: string) {
     if (value.includes(slot)) {
       onChange(value.filter((s) => s !== slot));
-    } else {
-      onChange([...value.filter((s) => s !== "asap" && s !== "anytime"), slot]);
+      return;
     }
+    // Picking an hourly slot replaces "asap"/"anytime", and is capped at 5.
+    if (atLimit) return;
+    onChange([...hourlySelected, slot]);
   }
 
   function chooseQuick(option: "asap" | "anytime") {
@@ -38,8 +36,14 @@ export function TimeSlotsStep({
 
   return (
     <div className="px-4 py-6">
-      <p className="mb-6 text-center text-sm text-neutral-500">
+      <p className="mb-2 text-center text-sm text-neutral-500">
         Deliveries are usually done as soon as possible after the pick-up time
+      </p>
+      <p className="mb-6 text-center text-sm font-medium text-neutral-700">
+        Offer up to {MAX_TIME_SLOTS} time slots. The helper picks one.{" "}
+        <span aria-live="polite" className={atLimit ? "text-brand-pink" : "text-neutral-500"}>
+          {hourlySelected.length}/{MAX_TIME_SLOTS} selected
+        </span>
       </p>
 
       <div className="mb-6 grid grid-cols-2 gap-3">
@@ -68,16 +72,34 @@ export function TimeSlotsStep({
       <p className="mb-2 text-center font-medium text-neutral-700">Today</p>
       <div className="mb-4 grid grid-cols-3 gap-2">
         {TODAY_SLOTS.map((slot) => (
-          <SlotButton key={slot} slot={slot} active={value.includes(slot)} onToggle={toggleSlot} />
+          <SlotButton
+            key={slot}
+            slot={slot}
+            active={value.includes(slot)}
+            disabled={atLimit && !value.includes(slot)}
+            onToggle={toggleSlot}
+          />
         ))}
       </div>
 
       <p className="mb-2 text-center font-medium text-neutral-700">Tomorrow</p>
       <div className="grid grid-cols-3 gap-2">
         {TOMORROW_SLOTS.map((slot) => (
-          <SlotButton key={slot} slot={slot} active={value.includes(slot)} onToggle={toggleSlot} />
+          <SlotButton
+            key={slot}
+            slot={slot}
+            active={value.includes(slot)}
+            disabled={atLimit && !value.includes(slot)}
+            onToggle={toggleSlot}
+          />
         ))}
       </div>
+
+      {atLimit && (
+        <p className="mt-3 text-center text-xs text-neutral-500">
+          You&apos;ve reached the limit. Unselect a slot to pick a different one.
+        </p>
+      )}
 
       <Continue onClick={onContinue} disabled={value.length === 0} />
     </div>
@@ -87,16 +109,20 @@ export function TimeSlotsStep({
 function SlotButton({
   slot,
   active,
+  disabled,
   onToggle,
 }: {
   slot: string;
   active: boolean;
+  disabled: boolean;
   onToggle: (slot: string) => void;
 }) {
   return (
     <button
       onClick={() => onToggle(slot)}
-      className={`rounded-[var(--radius-btn)] border py-3 text-center text-sm font-semibold ${
+      disabled={disabled}
+      aria-pressed={active}
+      className={`rounded-[var(--radius-btn)] border py-3 text-center text-sm font-semibold disabled:opacity-40 ${
         active ? "border-brand-blue bg-brand-blue text-white" : "border-brand-border bg-neutral-100 text-neutral-600"
       }`}
     >

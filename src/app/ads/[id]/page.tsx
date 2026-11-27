@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { db } from "@/lib/db";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
-import { PickUpButton } from "@/components/PickUpButton";
+import { CancelSpotButton } from "@/components/CancelSpotButton";
+import { ClaimSection } from "@/components/ClaimSection";
+import { bookedSentence, parseSlots, slotLabel } from "@/lib/slots";
+import { getSessionUser } from "@/lib/session";
+import { MAX_ACTIVE_BOOKINGS, countActiveBookings } from "@/lib/bookings";
 import { SIZES, categoryLabel } from "@/lib/types";
 import { timeAgo } from "@/lib/time";
 
@@ -11,10 +15,15 @@ export const dynamic = "force-dynamic";
 
 export default async function AdDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ slot?: string }>;
 }) {
   const { id } = await params;
+  const { slot: initialSlot } = await searchParams;
+  const viewer = await getSessionUser();
+  const bookedCount = viewer ? await countActiveBookings(viewer.id) : 0;
   const ad = await db.ad.findUnique({ where: { id }, include: { claimedBy: true } });
   if (!ad) notFound();
 
@@ -26,11 +35,12 @@ export default async function AdDetailPage({
         <PhotoCarousel photos={photos} alt={ad.title} />
         <Link
           href="/"
-          className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
+          aria-label="Back to home"
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
         >
           <ChevronLeftIcon className="h-5 w-5" />
         </Link>
-        <span className="absolute inset-x-0 top-4 text-center text-base font-medium text-white drop-shadow">
+        <span className="pointer-events-none absolute inset-x-0 top-4 text-center text-base font-medium text-white drop-shadow">
           {ad.title}
         </span>
       </div>
@@ -85,9 +95,33 @@ export default async function AdDetailPage({
           )}
         </div>
 
+        {ad.status === "ACTIVE" && (
+          <ClaimSection
+            adId={ad.id}
+            timeSlots={parseSlots(ad.timeSlots)}
+            signedIn={Boolean(viewer)}
+            initialSlot={initialSlot}
+            atLimit={bookedCount >= MAX_ACTIVE_BOOKINGS}
+            maxBookings={MAX_ACTIVE_BOOKINGS}
+          />
+        )}
+
         {ad.status === "CLAIMED" && (
           <div className="mt-6 rounded-[var(--radius-card)] bg-brand-green/10 p-4 text-center text-sm font-semibold text-brand-green">
-            {ad.claimedBy ? `${ad.claimedBy.name} is` : "A helper is"} on the way to pick this up.
+            {viewer && ad.claimedById === viewer.id ? (
+              <>
+                <p>{bookedSentence(ad.claimedSlot)}</p>
+                <p className="mt-1 font-normal">
+                  If you can&apos;t make it, cancel your spot as soon as possible.
+                </p>
+                <CancelSpotButton adId={ad.id} />
+              </>
+            ) : (
+              <>
+                <p>{ad.claimedBy ? `${ad.claimedBy.name} is` : "A helper is"} on the way to pick this up.</p>
+                {ad.claimedSlot && <p className="mt-1">Time: {slotLabel(ad.claimedSlot)}</p>}
+              </>
+            )}
           </div>
         )}
         {ad.status === "COMPLETED" && (
@@ -96,8 +130,6 @@ export default async function AdDetailPage({
           </div>
         )}
       </div>
-
-      {ad.status === "ACTIVE" && <PickUpButton adId={ad.id} />}
     </div>
   );
 }
