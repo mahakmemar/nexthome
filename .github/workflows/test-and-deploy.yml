@@ -1,0 +1,65 @@
+# Every push to main runs the end-to-end tests in real Google Chrome (headless), against
+# production builds. Deploying is meant to happen only after they pass (see the "deploy"
+# note at the bottom: there is no deploy target yet).
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: test-and-deploy
+  cancel-in-progress: false # never cancel a run that might be about to deploy
+
+jobs:
+  e2e:
+    name: End-to-end tests (Google Chrome)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the database client
+        run: npx prisma generate
+
+      - name: Install Google Chrome
+        run: npx playwright install --with-deps chrome
+
+      - name: Create a session secret for this run
+        run: echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
+      # Builds and starts the app in simulate mode on port 3000, runs every scenario test,
+      # checks simulate mode refuses the real database, then checks the normal build.
+      - name: Run end-to-end tests
+        run: npm run test:e2e:all
+
+      - name: Keep the reports, screenshots and videos if anything failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            playwright-report/
+            playwright-report-normal/
+            test-results/
+          retention-days: 14
+
+  # deploy:
+  #   name: Deploy
+  #   needs: e2e            # runs only if every test passed
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     # Deploy steps go here once there is a place to deploy to.

@@ -51,3 +51,13 @@ next-env.d.ts
 
 # photos people upload to ads (kept out of git)
 /uploads/
+
+# simulate mode
+/.sim/
+/.next-sim/
+/playwright-report/
+/test-results/
+/simulate.db
+/playwright-report-normal/
+/.next-e2e-normal/
+/e2e-normal.db

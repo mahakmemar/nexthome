@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
 import { hasPickupStarted, ratingSchema } from "@/lib/rating-rules";
+import { currentTime } from "@/lib/now";
 
 // The poster says how the pick-up went. This also closes the ad:
 //   on time / late  -> the ad is COMPLETED
@@ -72,6 +73,7 @@ export async function POST(
           outcome,
           stars: outcome === "NO_SHOW" ? null : (stars ?? null),
           comment: comment || null,
+          createdAt: currentTime(),
         },
       });
     });

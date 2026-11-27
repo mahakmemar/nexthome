@@ -8,7 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
-    "seed:demo": "tsx prisma/seed-demo.ts"
+    "seed:demo": "tsx prisma/seed-demo.ts",
+    "sim:db": "DATABASE_URL=file:./simulate.db prisma db push",
+    "dev:simulate": "npm run sim:db && SIMULATE=1 DATABASE_URL=file:./simulate.db NEXT_DIST_DIR=.next-sim next dev -p 3000",
+    "build:simulate": "NEXT_DIST_DIR=.next-sim next build",
+    "start:simulate": "npm run sim:db && SIMULATE=1 DATABASE_URL=file:./simulate.db NEXT_DIST_DIR=.next-sim next start -p 3000",
+    "test:e2e": "playwright test",
+    "test:e2e:normal": "playwright test -c playwright.normal.config.ts",
+    "test:e2e:guard": "node e2e-normal/check-sim-guard.mjs",
+    "test:e2e:all": "playwright test && npm run test:e2e:guard && npm run test:e2e:normal"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -23,6 +31,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

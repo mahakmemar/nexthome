@@ -5,7 +5,18 @@ import { useState } from "react";
 import { MAX_COMMENT_LENGTH, OUTCOMES, type OutcomeKey } from "@/lib/rating-rules";
 
 /** The poster says how the pick-up went. A no-show puts the ad back up for others. */
-export function RateBuyerForm({ adId, buyerName }: { adId: string; buyerName: string }) {
+export function RateBuyerForm({
+  adId,
+  buyerName,
+  correctRatingId,
+}: {
+  adId: string;
+  buyerName: string;
+  /** Set to fix an automatic no-show instead of rating a new pick-up. */
+  correctRatingId?: string;
+}) {
+  const correcting = Boolean(correctRatingId);
+  const outcomes = correcting ? OUTCOMES.filter((o) => o.key !== "NO_SHOW") : OUTCOMES;
   const router = useRouter();
   const [outcome, setOutcome] = useState<OutcomeKey | null>(null);
   const [stars, setStars] = useState(0);
@@ -21,7 +32,7 @@ export function RateBuyerForm({ adId, buyerName }: { adId: string; buyerName: st
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/ads/${adId}/rate`, {
+      const res = await fetch(correcting ? `/api/ratings/${correctRatingId}/correct` : `/api/ads/${adId}/rate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -42,11 +53,18 @@ export function RateBuyerForm({ adId, buyerName }: { adId: string; buyerName: st
   }
 
   return (
-    <div className="mt-4 rounded-[var(--radius-card)] border border-brand-border bg-white p-4 text-left text-neutral-800">
-      <p className="text-sm font-bold">How did the pick-up go with {buyerName}?</p>
+    <section
+      aria-label={correcting ? `Correct ${buyerName}'s missed pick-up` : `Rate ${buyerName}'s pick-up`}
+      className="mt-4 rounded-[var(--radius-card)] border border-brand-border bg-white p-4 text-left text-neutral-800"
+    >
+      <p className="text-sm font-bold">
+        {correcting
+          ? `${buyerName} didn't pick this up in time and your ad was put back up. Did they actually come?`
+          : `How did the pick-up go with ${buyerName}?`}
+      </p>
 
-      <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Pick-up outcome">
-        {OUTCOMES.map((o) => (
+      <div className={`mt-3 grid gap-2 ${correcting ? "grid-cols-2" : "grid-cols-3"}`} role="radiogroup" aria-label="Pick-up outcome">
+        {outcomes.map((o) => (
           <button
             key={o.key}
             type="button"
@@ -109,8 +127,8 @@ export function RateBuyerForm({ adId, buyerName }: { adId: string; buyerName: st
         disabled={!ready || loading}
         className="mt-3 w-full rounded-[var(--radius-btn)] bg-brand-pink py-3 text-sm font-bold text-white disabled:opacity-50"
       >
-        {loading ? "Saving..." : "Submit rating"}
+        {loading ? "Saving..." : correcting ? "Yes, they came" : "Submit rating"}
       </button>
-    </div>
+    </section>
   );
 }

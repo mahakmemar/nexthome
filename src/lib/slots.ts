@@ -12,6 +12,8 @@
 // Dated slots are read in the server's local time zone, which keeps this simple
 // for a single-region app. A multi-region app would store a time zone too.
 
+import { currentTime } from "@/lib/now";
+
 export const MAX_TIME_SLOTS = 5;
 
 /** A poster can offer dates from today up to this many days (today included). */
@@ -77,7 +79,7 @@ function slotEnd(slot: string) {
 }
 
 /** True for a dated slot that has already finished. Flexible and legacy slots never expire. */
-export function isSlotInPast(slot: string, now = new Date()) {
+export function isSlotInPast(slot: string, now = currentTime()) {
   const end = slotEnd(slot);
   return end ? end.getTime() <= now.getTime() : false;
 }
@@ -112,7 +114,7 @@ export function parseSlots(raw: string | null | undefined): string[] {
  */
 export function validateOfferedSlots(
   input: unknown,
-  now = new Date(),
+  now = currentTime(),
 ): { ok: true; slots: string[] } | { ok: false; error: string } {
   if (!Array.isArray(input) || !input.every((s) => typeof s === "string")) {
     return { ok: false, error: "timeSlots must be a list of slots" };
@@ -152,7 +154,7 @@ export function validateOfferedSlots(
 // ---------- display ----------
 
 /** "Today", "Tomorrow", or e.g. "Fri 27 Nov". */
-export function dayLabel(date: string, now = new Date()) {
+export function dayLabel(date: string, now = currentTime()) {
   const today = localDateString(now);
   if (date === today) return "Today";
   if (date === addDays(today, 1)) return "Tomorrow";
@@ -174,7 +176,7 @@ export function hoursLabel(slot: string) {
 }
 
 /** Human-readable label, e.g. "Fri 27 Nov 21:00–22:00" or "Today 21:00–22:00". */
-export function slotLabel(slot: string, now = new Date()) {
+export function slotLabel(slot: string, now = currentTime()) {
   if (slot === "asap") return "As soon as possible";
   if (slot === "anytime") return "Anytime";
   const dated = parseDatedSlot(slot);
@@ -196,7 +198,7 @@ export function sortSlots(slots: string[]) {
 }
 
 /** Non-flexible slots grouped by day, in time order, for showing as a picker. */
-export function groupSlotsByDay(slots: string[], now = new Date()) {
+export function groupSlotsByDay(slots: string[], now = currentTime()) {
   const groups: { key: string; title: string; items: { slot: string; label: string }[] }[] = [];
   for (const slot of sortSlots(slots.filter((s) => !isFlexibleSlot(s)))) {
     const dated = parseDatedSlot(slot);

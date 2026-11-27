@@ -11,6 +11,7 @@ import { AdCard } from "@/components/AdCard";
 import { HorizontalScroller } from "@/components/HorizontalScroller";
 import { LocationSearch } from "@/components/LocationSearch";
 import { getSessionUser } from "@/lib/session";
+import { releaseMissedPickups } from "@/lib/auto-release";
 import { slotLabel } from "@/lib/slots";
 import { BoltIcon, CreditCardIcon, ShieldCheckIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 
@@ -26,6 +27,8 @@ export default async function HomePage({
   // A place picked in the search box arrives as ?lat=&lon=&place=. With one, show only
   // ads within NEARBY_KM of it, nearest first. Without one, show the newest ads.
   const area = parseSearchArea(await searchParams);
+  // Put missed pick-ups back up before listing, so released ads show as available.
+  await releaseMissedPickups();
   let shown: { ad: Awaited<ReturnType<typeof db.ad.findMany>>[number]; km: number | null }[];
   if (area) {
     const box = boundingBox(area.latitude, area.longitude, NEARBY_KM);

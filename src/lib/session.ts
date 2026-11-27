@@ -51,7 +51,7 @@ export async function startSession(userId: string) {
   const store = await cookies();
   store.set(COOKIE_NAME, createToken(userId), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && process.env.SIMULATE !== "1",
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE_SECONDS,

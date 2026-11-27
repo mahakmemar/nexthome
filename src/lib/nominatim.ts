@@ -1,3 +1,6 @@
+import { isSimulate } from "@/lib/sim/state";
+import { fakeGeocoder } from "@/lib/sim/fake-geocoder";
+
 // Server-side access to geocoders. Identical lookups are cached for a few
 // minutes, so typing and retyping the same address doesn't hit a public service again.
 
@@ -8,6 +11,9 @@ const MAX_ENTRIES = 500;
 const cache = new Map<string, { at: number; data: unknown }>();
 
 export async function cachedJson<T>(url: URL): Promise<T | null> {
+  // Simulate mode answers from a fixed list of places and never calls the real services.
+  if (isSimulate()) return fakeGeocoder(url) as T;
+
   const key = url.toString();
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.data as T;

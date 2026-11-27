@@ -4,6 +4,7 @@ import { getSelfUser } from "@/lib/user";
 import { getSessionUser } from "@/lib/session";
 import { validateOfferedSlots } from "@/lib/slots";
 import { validatePhotoUrls } from "@/lib/uploads";
+import { currentTime } from "@/lib/now";
 
 export async function GET() {
   const ads = await db.ad.findMany({
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       serviceFee: 0,
       total: price,
       posterId: poster.id,
+      createdAt: currentTime(),
     },
   });
 

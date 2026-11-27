@@ -39,6 +39,13 @@ enum PickupOutcome {
   NO_SHOW
 }
 
+// Who recorded a rating: the poster, or the system when a booking was released automatically
+// because the pick-up time passed and the poster never confirmed it.
+enum RatingSource {
+  POSTER
+  SYSTEM
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -107,13 +114,18 @@ model Ad {
   ratings Rating[]
 }
 
-// A poster's rating of the person who booked their ad ("the buyer"). One per ad and
-// buyer: if a no-show frees the ad and someone else books it, that is a new rating.
+// A poster's rating of the person who booked their ad ("the buyer"). One per booking: the ad's
+// CLAIMED -> released/completed change happens exactly once, so a booking can only be rated once.
+// A no-show frees the ad, and a later booking of the same ad gets its own rating.
 model Rating {
   id      String        @id @default(cuid())
   outcome PickupOutcome
   stars   Int? // 1-5; not set for a no-show
   comment String?
+
+  source      RatingSource @default(POSTER)
+  // Set when the poster corrected an automatic no-show ("they actually came").
+  correctedAt DateTime?
 
   adId        String
   ad          Ad     @relation(fields: [adId], references: [id], onDelete: Cascade)
@@ -124,6 +136,6 @@ model Rating {
 
   createdAt DateTime @default(now())
 
-  @@unique([adId, ratedUserId])
+  @@index([adId])
   @@index([ratedUserId])
 }

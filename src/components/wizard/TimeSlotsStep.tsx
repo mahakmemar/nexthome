@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { Continue } from "@/components/wizard/Continue";
+import { currentTime } from "@/lib/now";
 import {
   BOOKING_WINDOW_DAYS,
   FIRST_START_HOUR,
@@ -36,7 +37,7 @@ export function TimeSlotsStep({
   onChange: (slots: string[]) => void;
   onContinue: () => void;
 }) {
-  const [now] = useState(() => new Date());
+  const [now] = useState(() => currentTime());
   const today = localDateString(now);
   const days = Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => addDays(today, i));
 

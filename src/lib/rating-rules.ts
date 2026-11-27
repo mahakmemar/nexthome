@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { currentTime } from "@/lib/now";
 import { parseDatedSlot } from "@/lib/slots";
 
 // Pure rating rules: no database access, so client components can import this file.
@@ -36,7 +37,7 @@ export type RatingInput = z.infer<typeof ratingSchema>;
  * Flexible ("asap" / "anytime") and legacy undated slots have no clock to check,
  * so those can be rated any time after booking.
  */
-export function hasPickupStarted(slot: string | null | undefined, now = new Date()) {
+export function hasPickupStarted(slot: string | null | undefined, now = currentTime()) {
   const dated = slot ? parseDatedSlot(slot) : null;
   if (!dated) return true;
   return new Date(dated.y, dated.mo - 1, dated.d, dated.startHour, 0).getTime() <= now.getTime();

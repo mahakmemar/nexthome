@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
 import { isSlotInPast, parseSlots } from "@/lib/slots";
-import { BOOKING_LIMIT_MESSAGE, MAX_ACTIVE_BOOKINGS } from "@/lib/bookings";
+import { bookingLimitMessage } from "@/lib/bookings";
+import { currentTime } from "@/lib/now";
+import { getRules } from "@/lib/rules";
 
 export async function POST(
   req: Request,
@@ -45,14 +47,14 @@ export async function POST(
   // can't slip past the limit, and so an ad can't be booked twice.
   const result = await db.$transaction(async (tx) => {
     const booked = await tx.ad.count({ where: { status: "CLAIMED", claimedById: user.id } });
-    if (booked >= MAX_ACTIVE_BOOKINGS) return { error: "LIMIT" as const };
+    if (booked >= getRules().maxActiveBookings) return { error: "LIMIT" as const };
 
     const claimed = await tx.ad.updateMany({
       where: { id, status: "ACTIVE" },
       data: {
         status: "CLAIMED",
         claimedById: user.id,
-        claimedAt: new Date(),
+        claimedAt: currentTime(),
         claimedSlot: typeof slot === "string" ? slot : null,
       },
     });
@@ -64,7 +66,7 @@ export async function POST(
 
   if ("error" in result) {
     return result.error === "LIMIT"
-      ? NextResponse.json({ error: BOOKING_LIMIT_MESSAGE, code: "BOOKING_LIMIT" }, { status: 409 })
+      ? NextResponse.json({ error: bookingLimitMessage(getRules().maxActiveBookings), code: "BOOKING_LIMIT" }, { status: 409 })
       : NextResponse.json({ error: "Ad is no longer available" }, { status: 409 });
   }
   const updated = result.ad;

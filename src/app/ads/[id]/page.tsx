@@ -9,9 +9,12 @@ import { RateBuyerForm } from "@/components/RateBuyerForm";
 import { ReputationLine } from "@/components/ReputationLine";
 import { OUTCOMES, hasPickupStarted } from "@/lib/rating-rules";
 import { getReputation } from "@/lib/ratings";
+import { releaseMissedPickups } from "@/lib/auto-release";
+import { currentMs } from "@/lib/now";
+import { getRules } from "@/lib/rules";
 import { bookedSentence, isSlotInPast, parseSlots, slotLabel } from "@/lib/slots";
 import { getSessionUser } from "@/lib/session";
-import { MAX_ACTIVE_BOOKINGS, countActiveBookings } from "@/lib/bookings";
+import { countActiveBookings } from "@/lib/bookings";
 import { SIZES, categoryLabel } from "@/lib/types";
 import { timeAgo } from "@/lib/time";
 import { formatPrice } from "@/lib/money";
@@ -27,6 +30,7 @@ export default async function AdDetailPage({
 }) {
   const { id } = await params;
   const { slot: initialSlot } = await searchParams;
+  await releaseMissedPickups();
   const viewer = await getSessionUser();
   const bookedCount = viewer ? await countActiveBookings(viewer.id) : 0;
   const ad = await db.ad.findUnique({ where: { id }, include: { claimedBy: true } });
@@ -40,6 +44,20 @@ export default async function AdDetailPage({
     isPoster && ad.status === "COMPLETED"
       ? await db.rating.findFirst({ where: { adId: ad.id, raterId: ad.posterId } })
       : null;
+
+  // An automatic no-show the poster can still correct ("they actually came").
+  const releasedNoShow = isPoster
+    ? await db.rating.findFirst({
+        where: {
+          adId: ad.id,
+          source: "SYSTEM",
+          correctedAt: null,
+          createdAt: { gte: new Date(currentMs() - getRules().undoWindowMs) },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { ratedUser: true },
+      })
+    : null;
 
   const photos: string[] = JSON.parse(ad.photos || "[]");
   // Dated slots expire; only offer the ones that are still ahead.
@@ -119,8 +137,8 @@ export default async function AdDetailPage({
             expired={offered.length > 0 && upcoming.length === 0}
             signedIn={Boolean(viewer)}
             initialSlot={initialSlot}
-            atLimit={bookedCount >= MAX_ACTIVE_BOOKINGS}
-            maxBookings={MAX_ACTIVE_BOOKINGS}
+            atLimit={bookedCount >= getRules().maxActiveBookings}
+            maxBookings={getRules().maxActiveBookings}
           />
         )}
 
@@ -155,6 +173,13 @@ export default async function AdDetailPage({
               You can rate the pick-up once the booked time has started.
             </p>
           )
+        )}
+        {releasedNoShow && (
+          <RateBuyerForm
+            adId={ad.id}
+            buyerName={releasedNoShow.ratedUser.name}
+            correctRatingId={releasedNoShow.id}
+          />
         )}
         {ad.status === "COMPLETED" && (
           <div className="mt-6 rounded-[var(--radius-card)] bg-neutral-100 p-4 text-center text-sm font-semibold text-neutral-500">

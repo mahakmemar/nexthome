@@ -2,11 +2,13 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { getSelfUser } from "@/lib/user";
 import { getSessionUser } from "@/lib/session";
+import { releaseMissedPickups } from "@/lib/auto-release";
 import { AdCard } from "@/components/AdCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyAdsPage() {
+  await releaseMissedPickups();
   const self = await getSelfUser();
   // Ads you picked up belong to the account you're logged in with.
   const viewer = await getSessionUser();
