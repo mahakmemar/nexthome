@@ -22,8 +22,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NextHome",
-  description: "A learning clone of NextHome's help-marketplace flow.",
+  title: "SwapCommunity",
+  description: "SwapCommunity: give away and pick up items in your community.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

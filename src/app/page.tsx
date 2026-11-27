@@ -1,4 +1,12 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
+import {
+  NEARBY_KM,
+  boundingBox,
+  formatDistance,
+  haversineDistanceKm,
+  parseSearchArea,
+} from "@/lib/geo";
 import { AdCard } from "@/components/AdCard";
 import { HorizontalScroller } from "@/components/HorizontalScroller";
 import { LocationSearch } from "@/components/LocationSearch";
@@ -10,12 +18,41 @@ export const dynamic = "force-dynamic";
 
 const SHOW_REFERRAL_SECTION = false;
 
-export default async function HomePage() {
-  const ads = await db.ad.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lat?: string; lon?: string; place?: string }>;
+}) {
+  // A place picked in the search box arrives as ?lat=&lon=&place=. With one, show only
+  // ads within NEARBY_KM of it, nearest first. Without one, show the newest ads.
+  const area = parseSearchArea(await searchParams);
+  let shown: { ad: Awaited<ReturnType<typeof db.ad.findMany>>[number]; km: number | null }[];
+  if (area) {
+    const box = boundingBox(area.latitude, area.longitude, NEARBY_KM);
+    const candidates = await db.ad.findMany({
+      where: {
+        status: "ACTIVE",
+        latitude: { gte: box.minLat, lte: box.maxLat },
+        longitude: { gte: box.minLon, lte: box.maxLon },
+      },
+    });
+    shown = candidates
+      .map((ad) => ({
+        ad,
+        km: haversineDistanceKm(area.latitude, area.longitude, ad.latitude!, ad.longitude!),
+      }))
+      .filter((item) => item.km <= NEARBY_KM)
+      .sort((a, b) => a.km - b.km)
+      .slice(0, 30);
+  } else {
+    const newest = await db.ad.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+    shown = newest.map((ad) => ({ ad, km: null }));
+  }
+  const sectionTitle = area ? `Active ads near ${area.place}` : "Active ads in your area";
 
   // The logged-in person's name, and the ads they have booked to pick up.
   const viewer = await getSessionUser();
@@ -28,9 +65,9 @@ export default async function HomePage() {
 
   return (
     <div className="pb-6">
-      <header className="flex items-center justify-center border-b border-brand-border py-5">
-        <span className="text-2xl font-black italic tracking-tight text-brand-navy">
-          NextHome
+      <header className="flex items-center justify-center border-b border-brand-border py-5 pr-24 min-[430px]:pr-0">
+        <span className="text-xl font-black italic tracking-tight text-brand-navy min-[430px]:text-2xl">
+          SwapCommunity
         </span>
       </header>
 
@@ -58,19 +95,42 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <LocationSearch />
+      <LocationSearch key={area ? `${area.latitude},${area.longitude}` : "all"} initialPlace={area?.place} />
 
       <section className="px-4 py-5">
-        <h2 className="mb-3 text-xl font-bold text-neutral-900">Active ads in your area</h2>
-        <HorizontalScroller label="Active ads in your area">
-          {ads.map((ad) => (
-            <AdCard key={ad.id} ad={ad} className="w-44 snap-start" />
+        <h2 className="text-xl font-bold text-neutral-900">{sectionTitle}</h2>
+        {area ? (
+          <p className="mb-3 mt-1 text-sm text-neutral-500">
+            Within {NEARBY_KM} km, nearest first.{" "}
+            <Link href="/" className="font-semibold text-brand-blue">
+              Show all ads
+            </Link>
+          </p>
+        ) : (
+          <div className="mb-3" />
+        )}
+        <HorizontalScroller label={sectionTitle}>
+          {shown.map(({ ad, km }) => (
+            <AdCard
+              key={ad.id}
+              ad={ad}
+              className="w-44 snap-start"
+              note={km !== null ? formatDistance(km) : undefined}
+            />
           ))}
-          {ads.length === 0 && (
-            <p className="text-sm text-neutral-500">
-              No active ads yet — be the first to post one.
-            </p>
-          )}
+          {shown.length === 0 &&
+            (area ? (
+              <p className="text-sm text-neutral-500">
+                No active ads within {NEARBY_KM} km of {area.place}.{" "}
+                <Link href="/" className="font-semibold text-brand-blue">
+                  Show all ads
+                </Link>
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-500">
+                No active ads yet — be the first to post one.
+              </p>
+            ))}
         </HorizontalScroller>
       </section>
 
@@ -100,7 +160,7 @@ export default async function HomePage() {
           <UserGroupIcon className="mx-auto mb-3 h-10 w-10 text-brand-navy" />
           <h2 className="text-xl font-bold text-neutral-900">Earn credits by inviting friends</h2>
           <p className="mt-2 text-sm text-neutral-500">
-            Share NextHome with friends and get credits toward your next pick-up.
+            Share SwapCommunity with friends and get credits toward your next pick-up.
           </p>
         </section>
       )}

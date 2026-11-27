@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { MagnifyingGlassIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, MapPinIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { formatDistance } from "@/lib/geo";
 
 type Suggestion = {
   label: string;
+  address?: string;
   latitude: number;
   longitude: number;
   distanceKm: number | null;
@@ -12,13 +15,9 @@ type Suggestion = {
 
 type Coords = { latitude: number; longitude: number };
 
-function formatDistance(km: number) {
-  if (km < 1) return `${Math.round(km * 1000)} m away`;
-  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
-}
-
-export function LocationSearch() {
-  const [query, setQuery] = useState("");
+export function LocationSearch({ initialPlace }: { initialPlace?: string }) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initialPlace ?? "");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +26,8 @@ export function LocationSearch() {
   const [origin, setOrigin] = useState<Coords | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasRequestedOrigin = useRef(false);
+  // The place already applied to the page, so we don't search for it again.
+  const appliedPlace = useRef(initialPlace ?? null);
 
   const trimmedQuery = query.trim();
 
@@ -47,7 +48,7 @@ export function LocationSearch() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (trimmedQuery.length < 3) {
+    if (trimmedQuery.length < 3 || trimmedQuery === appliedPlace.current) {
       return;
     }
 
@@ -76,18 +77,32 @@ export function LocationSearch() {
 
   const visibleSuggestions = trimmedQuery.length >= 3 ? suggestions : [];
 
-  function selectSuggestion(suggestion: Suggestion) {
-    setQuery(suggestion.label);
+  // Choosing a place puts it in the page address, so the page shows only ads near it.
+  function applyPlace(place: string, latitude: number, longitude: number) {
+    appliedPlace.current = place;
+    setQuery(place);
     setSuggestions([]);
     setOpen(false);
+    router.push(`/?${new URLSearchParams({ lat: String(latitude), lon: String(longitude), place })}`);
+  }
+
+  function selectSuggestion(suggestion: Suggestion) {
+    applyPlace(suggestion.address ?? suggestion.label, suggestion.latitude, suggestion.longitude);
+  }
+
+  function clearSearch() {
+    appliedPlace.current = null;
+    setQuery("");
+    setSuggestions([]);
+    setError(null);
+    if (initialPlace) router.push("/");
   }
 
   async function fillAddressFromCoords(latitude: number, longitude: number) {
     try {
       const res = await fetch(`/api/geocode/reverse?lat=${latitude}&lon=${longitude}`);
       const body = await res.json();
-      setQuery(body.label ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-      setOpen(false);
+      applyPlace(body.address ?? body.label ?? "your location", latitude, longitude);
     } catch {
       setError("Couldn't determine your address");
     } finally {
@@ -134,10 +149,27 @@ export function LocationSearch() {
             setOpen(true);
             requestOriginSilently();
           }}
+          onKeyDown={(e) => {
+            // Enter picks the top suggestion, so typing a place and pressing Enter works.
+            if (e.key === "Enter" && visibleSuggestions[0]) {
+              e.preventDefault();
+              selectSuggestion(visibleSuggestions[0]);
+            }
+          }}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Search your area or address"
           className="w-full bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            aria-label="Clear search"
+            className="flex-none text-neutral-400 hover:text-neutral-600"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {open && (
@@ -166,7 +198,7 @@ export function LocationSearch() {
               >
                 <MapPinIcon className="mt-0.5 h-4 w-4 flex-none text-neutral-400" />
                 <span className="min-w-0 flex-1">
-                  <span className="line-clamp-2 block">{s.label}</span>
+                  <span className="line-clamp-2 block">{s.address ?? s.label}</span>
                   {s.distanceKm != null && (
                     <span className="text-xs text-neutral-400">{formatDistance(s.distanceKm)}</span>
                   )}

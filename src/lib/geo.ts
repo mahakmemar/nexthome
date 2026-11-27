@@ -82,3 +82,36 @@ export function extractHouseNumber(query: string): string | null {
   const trailing = /\S\s+(\d{1,5}[A-Za-z]?)$/.exec(first);
   return trailing ? trailing[1] : null;
 }
+
+// ---------- searching ads by place ----------
+
+/** How far from the searched place an ad can be and still be shown. */
+export const NEARBY_KM = 15;
+
+/** The place picked in the search box, read from the page address (?lat=&lon=&place=). */
+export function parseSearchArea(params: { lat?: string; lon?: string; place?: string }) {
+  if (!params.lat?.trim() || !params.lon?.trim()) return null;
+  const latitude = Number(params.lat);
+  const longitude = Number(params.lon);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  const place = (params.place ?? "").trim().slice(0, 120);
+  return { latitude, longitude, place: place || "this area" };
+}
+
+/** A square around a point, used to narrow the database query before measuring exact distance. */
+export function boundingBox(latitude: number, longitude: number, km: number) {
+  const dLat = km / 111;
+  const dLon = km / (111 * Math.max(Math.cos((latitude * Math.PI) / 180), 0.01));
+  return {
+    minLat: latitude - dLat,
+    maxLat: latitude + dLat,
+    minLon: longitude - dLon,
+    maxLon: longitude + dLon,
+  };
+}
+
+export function formatDistance(km: number) {
+  if (km < 1) return `${Math.round(km * 1000)} m away`;
+  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
+}

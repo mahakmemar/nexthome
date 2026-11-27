@@ -1,7 +1,7 @@
 // Server-side access to geocoders. Identical lookups are cached for a few
 // minutes, so typing and retyping the same address doesn't hit a public service again.
 
-const USER_AGENT = "NextHome-Clone-Dev/1.0 (local learning project)";
+const USER_AGENT = "SwapCommunity-Dev/1.0 (local learning project)";
 const TTL_MS = 10 * 60 * 1000;
 const MAX_ENTRIES = 500;
 
